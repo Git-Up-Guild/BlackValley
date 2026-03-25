@@ -1,0 +1,9 @@
+{
+    "Name": "BlackValley",
+    "Author": "GUG",
+    "Version": "1.0.0",
+    "Description": "From CUC Developing Game Concept.",
+    "UniqueID": "GUG.BlackValley",
+    "EntryDll": "BlackValley.dll",
+    "MinimumApiVersion": "4.0.0"
+}
