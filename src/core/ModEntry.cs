@@ -56,6 +56,10 @@ public sealed class ModEntry : Mod
         }
 
         helper.Events.Input.ButtonPressed += OnButtonPressed;
+
+        Monitor.Log(
+            $"BlackValley loaded | Hotkey: {_config.ToggleBattleMenuKey} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
+            LogLevel.Info);
     }
 
     // 统一在按键按下时处理开关逻辑
