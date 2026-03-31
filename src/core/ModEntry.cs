@@ -55,15 +55,17 @@ public sealed class ModEntry : Mod
             EnemyDatabase[enemy.Id] = enemy;
         }
 
-        helper.Events.Input.ButtonsChanged += OnButtonsChanged;
+        helper.Events.Input.ButtonPressed += OnButtonPressed;
     }
 
-    // 统一在输入变化时处理开关逻辑
+    // 统一在按键按下时处理开关逻辑
     // 如果菜单已经打开，则再次按热键直接关闭
-    private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs eventArgs)
+    private void OnButtonPressed(object? sender, ButtonPressedEventArgs eventArgs)
     {
         if (!_config.ToggleBattleMenuKey.JustPressed())
+        {
             return;
+        }
 
         Helper.Input.SuppressActiveKeybinds(_config.ToggleBattleMenuKey);
 
@@ -73,6 +75,13 @@ public sealed class ModEntry : Mod
             return;
         }
 
-        Game1.activeClickableMenu = new BattleMenu(_battleAssets);
+        try
+        {
+            Game1.activeClickableMenu = new BattleMenu(_battleAssets);
+        }
+        catch (Exception exception)
+        {
+            Monitor.Log($"Failed to open battle menu: {exception}", LogLevel.Error);
+        }
     }
 }
