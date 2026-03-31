@@ -35,7 +35,7 @@
     "PlantId": "plant_parsnip",
     "Shape": [[0, 0]],
     "DowngradeCardIds": [],
-    "Description": "Grow 1 turn\nMature: Block 1 infection"
+    "Description": "Grow 1 turn\nHarvest: Leave Block 1 here"
   },
   {
     "Id": "player_seed_strawberry",

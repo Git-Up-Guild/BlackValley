@@ -124,6 +124,24 @@ public sealed partial class BattleMenu
                     spriteBatch.Draw(Game1.staminaRect, tileBounds, Color.CornflowerBlue * 0.45f);
                 }
 
+                if (!tileState.HasPlant && tileState.PersistentProtectionCharges > 0)
+                {
+                    spriteBatch.Draw(Game1.staminaRect, tileBounds, Color.SteelBlue * 0.22f);
+
+                    Rectangle persistentProtectionBounds = new Rectangle(
+                        tileBounds.X + 4,
+                        tileBounds.Bottom - 24,
+                        tileBounds.Width - 8,
+                        16);
+
+                    DrawCenteredText(
+                        spriteBatch,
+                        BattleTextStyles.FieldPlantProtection,
+                        $"Guard {tileState.PersistentProtectionCharges}",
+                        persistentProtectionBounds,
+                        Color.Navy);
+                }
+
                 if (tileState.HasPlant)
                 {
                     Rectangle plantBounds = new Rectangle(
@@ -294,33 +312,21 @@ public sealed partial class BattleMenu
 
         if (_battleController.State.BonusAttackDamageThisTurn > 0)
         {
-            Rectangle bonusAttackBounds = new Rectangle(
-                _layout.EnergyBounds.X - 20,
-                _layout.EnergyBounds.Bottom + 10,
-                _layout.EnergyBounds.Width + 40,
-                18);
-
             DrawCenteredText(
                 spriteBatch,
                 BattleTextStyles.TurnModifier,
                 $"Attack +{_battleController.State.BonusAttackDamageThisTurn}",
-                bonusAttackBounds,
+                _layout.BonusAttackBounds,
                 Color.DarkRed);
         }
 
         if (_battleController.State.InfectionTierReductionThisTurn > 0)
         {
-            Rectangle infectionReductionBounds = new Rectangle(
-                _layout.EnergyBounds.X - 20,
-                _layout.EnergyBounds.Bottom + 32,
-                _layout.EnergyBounds.Width + 40,
-                18);
-
             DrawCenteredText(
                 spriteBatch,
                 BattleTextStyles.TurnModifier,
                 $"Infect -{_battleController.State.InfectionTierReductionThisTurn}",
-                infectionReductionBounds,
+                _layout.InfectionReductionBounds,
                 Color.DarkOliveGreen);
         }
     }

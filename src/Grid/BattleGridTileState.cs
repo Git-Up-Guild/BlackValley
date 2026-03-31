@@ -16,6 +16,8 @@ internal sealed class BattleGridTileState
 
     public int RemainingProtectionCharges { get; set; }
 
+    public int PersistentProtectionCharges { get; set; }
+
     public int TemporaryProtectionCharges { get; set; }
 
     public bool WasPlantedThisTurn { get; set; }

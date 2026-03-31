@@ -5,11 +5,11 @@
     "IconId": "Plant_Parsnip",
     "GrowthTurnsRequired": 1,
     "BaseProtectionCharges": 1,
-    "HarvestEffectType": "None",
-    "HarvestEffectValue": 0,
+    "HarvestEffectType": "GrantPersistentProtection",
+    "HarvestEffectValue": 1,
     "HarvestShapeId": "",
     "HarvestShape": [],
-    "Description": "Grow 1 turn\nMature: Block 1 infection"
+    "Description": "Grow 1 turn\nHarvest: Leave Block 1 here"
   },
   {
     "Id": "plant_strawberry",

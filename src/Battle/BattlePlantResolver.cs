@@ -17,6 +17,7 @@ internal sealed class BattlePlantResolver
     private const string HarvestEffectTypeAddAttackDamage = "AddAttackDamage";
     private const string HarvestEffectTypeReduceInfectionTier = "ReduceInfectionTier";
     private const string HarvestEffectTypeHealInfectedTiles = "HealInfectedTiles";
+    private const string HarvestEffectTypeGrantPersistentProtection = "GrantPersistentProtection";
 
     private readonly BattleState _state;
     private readonly BattleFieldService _fieldService;
@@ -146,6 +147,13 @@ internal sealed class BattlePlantResolver
             }
 
             _fieldService.SyncFarmHealth();
+            return;
+        }
+
+        if (string.Equals(plantData.HarvestEffectType, HarvestEffectTypeGrantPersistentProtection, StringComparison.Ordinal))
+        {
+            BattleGridTileState tileState = _state.FarmGrid[centerTile.X, centerTile.Y];
+            tileState.PersistentProtectionCharges += Math.Max(0, plantData.HarvestEffectValue);
         }
     }
 }

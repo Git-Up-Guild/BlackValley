@@ -36,6 +36,11 @@ internal sealed class BattleMenuLayout
     public const int CharacterFieldGap = 52;
     public const int CharacterNameTopGap = 10;
     public const int CharacterNameHeight = 20;
+    public const int PlayerModifierWidth = 150;
+    public const int PlayerModifierHeight = 18;
+    public const int PlayerModifierLeftGap = 20;
+    public const int PlayerModifierTopOffset = 60;
+    public const int PlayerModifierLineGap = 22;
     public const int EnemyHealthBarTopGap = 35;
     public const int EnemyHealthBarHeight = 20;
 
@@ -85,6 +90,10 @@ internal sealed class BattleMenuLayout
     public Rectangle EnemyNameBounds { get; }
 
     public Rectangle EnemyHealthBarBounds { get; }
+
+    public Rectangle BonusAttackBounds { get; }
+
+    public Rectangle InfectionReductionBounds { get; }
 
     public Rectangle EnergyBounds { get; }
 
@@ -153,6 +162,18 @@ internal sealed class BattleMenuLayout
             GhostBounds.Bottom + EnemyHealthBarTopGap,
             GhostBounds.Width,
             EnemyHealthBarHeight);
+
+        BonusAttackBounds = new Rectangle(
+            FarmerBounds.X - PlayerModifierLeftGap - PlayerModifierWidth,
+            FarmerBounds.Y + PlayerModifierTopOffset,
+            PlayerModifierWidth,
+            PlayerModifierHeight);
+
+        InfectionReductionBounds = new Rectangle(
+            BonusAttackBounds.X,
+            BonusAttackBounds.Y + PlayerModifierLineGap,
+            PlayerModifierWidth,
+            PlayerModifierHeight);
 
         // 关闭按钮固定在主面板右上角
         CloseButtonBounds = new Rectangle(

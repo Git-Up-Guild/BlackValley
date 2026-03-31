@@ -199,6 +199,12 @@ internal sealed class BattleMonsterResolver
             return;
         }
 
+        if (tileState.PersistentProtectionCharges > 0)
+        {
+            tileState.PersistentProtectionCharges--;
+            return;
+        }
+
         if (tileState.HasPlant)
         {
             if (tileState.RemainingProtectionCharges > 1)
