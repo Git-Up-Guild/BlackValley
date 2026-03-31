@@ -11,4 +11,5 @@ internal static class BattleRules
     public const int PlayerHandSize = 5;
     public const int StartingEnergy = 3;
     public const int StartingFarmHealth = 16;
+    public const int FarmDefeatHealthThreshold = 3;
 }

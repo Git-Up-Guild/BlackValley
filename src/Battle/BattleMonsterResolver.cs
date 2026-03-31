@@ -77,7 +77,7 @@ internal sealed class BattleMonsterResolver
         foreach (MonsterIntent monsterIntent in _state.MonsterIntents)
         {
             ExecuteMonsterIntent(monsterIntent);
-            if (_state.FarmHealth <= 0)
+            if (_state.FarmHealth <= BattleRules.FarmDefeatHealthThreshold)
             {
                 break;
             }
@@ -138,7 +138,7 @@ internal sealed class BattleMonsterResolver
         foreach (Point targetTile in _fieldService.GetShapeTargets(monsterIntent.CenterTile, monsterIntent.ResolvedCard.Shape))
         {
             ApplyInfectionToTile(targetTile);
-            if (_state.FarmHealth <= 0)
+            if (_state.FarmHealth <= BattleRules.FarmDefeatHealthThreshold)
             {
                 return;
             }

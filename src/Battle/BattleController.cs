@@ -249,10 +249,10 @@ internal sealed class BattleController
         }
     }
 
-    // 失败条件是 16 格全部感染
+    // 当农田剩余生命值小于等于阈值时立即失败
     private void TryResolveDefeat()
     {
-        if (State.FarmHealth <= 0)
+        if (State.FarmHealth <= BattleRules.FarmDefeatHealthThreshold)
         {
             SetBattleResult(BattleDefeatText);
         }
