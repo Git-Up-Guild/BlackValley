@@ -55,32 +55,35 @@ public sealed class ModEntry : Mod
             EnemyDatabase[enemy.Id] = enemy;
         }
 
-        helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Input.ButtonsChanged += OnButtonsChanged;
 
         Monitor.Log(
             $"BlackValley loaded | Hotkey: {_config.ToggleBattleMenuKey} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
             LogLevel.Info);
     }
 
-    // 统一在按键按下时处理开关逻辑
-    // 如果菜单已经打开，则再次按热键直接关闭
-    private void OnButtonPressed(object? sender, ButtonPressedEventArgs eventArgs)
+    // 统一在按键变化时处理开关逻辑
+    // 这里按 SMAPI 推荐做法使用 ButtonsChanged + JustPressed
+    private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs eventArgs)
     {
-        if (!_config.ToggleBattleMenuKey.IsDown())
+        if (!_config.ToggleBattleMenuKey.JustPressed())
         {
             return;
         }
 
+        Monitor.Log($"Battle menu hotkey detected: {_config.ToggleBattleMenuKey}", LogLevel.Info);
         Helper.Input.SuppressActiveKeybinds(_config.ToggleBattleMenuKey);
 
         if (Game1.activeClickableMenu is BattleMenu)
         {
+            Monitor.Log("Closing active battle menu", LogLevel.Info);
             Game1.exitActiveMenu();
             return;
         }
 
         try
         {
+            Monitor.Log("Opening battle menu", LogLevel.Info);
             Game1.activeClickableMenu = new BattleMenu(_battleAssets);
         }
         catch (Exception exception)
