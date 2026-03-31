@@ -1,0 +1,12 @@
+[
+  {
+    "Id": "slime",
+    "Name": "Slime",
+    "IconId": "Enemy_Slime",
+    "MaxHealth": 12,
+    "BaseInfectionsPerTurn": 1,
+    "EnrageIntervalTurns": 3,
+    "ExtraInfectionsPerEnrage": 1,
+    "Description": "Enrages every 3 turns and gains one extra infection action each turn after that"
+  }
+]
