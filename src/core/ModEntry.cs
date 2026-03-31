@@ -55,6 +55,8 @@ public sealed class ModEntry : Mod
             EnemyDatabase[enemy.Id] = enemy;
         }
 
+        helper.Events.Input.ButtonPressed += OnButtonPressed;
+        helper.Events.Input.ButtonReleased += OnButtonReleased;
         helper.Events.Input.ButtonsChanged += OnButtonsChanged;
 
         Monitor.Log(
@@ -62,10 +64,26 @@ public sealed class ModEntry : Mod
             LogLevel.Info);
     }
 
+    // 记录每次按下的输入事件，方便跨平台排查热键是否被 SMAPI 收到
+    private void OnButtonPressed(object? sender, ButtonPressedEventArgs eventArgs)
+    {
+        Monitor.Log($"ButtonPressed: {eventArgs.Button}", LogLevel.Info);
+    }
+
+    // 记录每次松开的输入事件，便于对照按下和释放阶段是否都正常触发
+    private void OnButtonReleased(object? sender, ButtonReleasedEventArgs eventArgs)
+    {
+        Monitor.Log($"ButtonReleased: {eventArgs.Button}", LogLevel.Info);
+    }
+
     // 统一在按键变化时处理开关逻辑
     // 这里按 SMAPI 推荐做法使用 ButtonsChanged + JustPressed
     private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs eventArgs)
     {
+        Monitor.Log(
+            $"ButtonsChanged | Pressed: [{string.Join(", ", eventArgs.Pressed)}] | Released: [{string.Join(", ", eventArgs.Released)}]",
+            LogLevel.Info);
+
         if (!_config.ToggleBattleMenuKey.JustPressed())
         {
             return;
