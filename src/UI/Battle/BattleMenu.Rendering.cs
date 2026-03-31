@@ -112,6 +112,16 @@ public sealed partial class BattleMenu
                 {
                     float alpha = MathF.Min(0.2f + intentHitCount * 0.1f, 0.45f);
                     spriteBatch.Draw(Game1.staminaRect, tileBounds, Color.Red * alpha);
+
+                    if (intentHitCount > 1)
+                    {
+                        DrawBottomRightText(
+                            spriteBatch,
+                            BattleTextStyles.FieldIntentStack,
+                            $"x{intentHitCount}",
+                            tileBounds,
+                            Color.White);
+                    }
                 }
 
                 if (tileState.IsInfected)
@@ -154,7 +164,7 @@ public sealed partial class BattleMenu
                         plantBounds.Y,
                         plantBounds.Width,
                         18);
-                    Rectangle plantProtectionBounds = new Rectangle(
+                    Rectangle plantNameBounds = new Rectangle(
                         tileBounds.X + 4,
                         tileBounds.Bottom - 24,
                         tileBounds.Width - 8,
@@ -169,15 +179,12 @@ public sealed partial class BattleMenu
                         plantStateBounds,
                         Color.DarkGreen);
 
-                    if (tileState.RemainingProtectionCharges > 0)
-                    {
-                        DrawCenteredText(
-                            spriteBatch,
-                            BattleTextStyles.FieldPlantProtection,
-                            $"Block {tileState.RemainingProtectionCharges}",
-                            plantProtectionBounds,
-                            Color.Navy);
-                    }
+                    DrawCenteredText(
+                        spriteBatch,
+                        BattleTextStyles.FieldPlantProtection,
+                        GetPlantDisplayName(tileState),
+                        plantNameBounds,
+                        Color.Navy);
                 }
 
                 if (tileState.TemporaryProtectionCharges > 0)
@@ -603,6 +610,17 @@ public sealed partial class BattleMenu
         DrawText(spriteBatch, style, text, new Vector2(textX, textY), color);
     }
 
+    // 预警叠层次数放在格子右下角，方便区分同一格会被命中几次
+    private static void DrawBottomRightText(SpriteBatch spriteBatch, BattleTextStyle style, string text, Rectangle bounds, Color color)
+    {
+        Vector2 textSize = MeasureText(style, text);
+        float textX = bounds.Right - textSize.X - 3f;
+        float textY = bounds.Bottom - textSize.Y - 3f;
+
+        DrawText(spriteBatch, style, text, new Vector2(textX, textY), Color.Black * 0.55f);
+        DrawText(spriteBatch, style, text, new Vector2(textX - 1f, textY - 1f), color);
+    }
+
     // 旋转卡牌中的文本同样需要按区域居中
     private static void DrawRotatedCenteredText(
         SpriteBatch spriteBatch,
@@ -724,6 +742,18 @@ public sealed partial class BattleMenu
     private static string GetPlantStateLabel(BattleGridTileState tileState)
     {
         return tileState.IsMature ? "Harvest" : $"Grow {tileState.GrowthTurnsRemaining}";
+    }
+
+    // 地块底部优先显示植物名字，比固定的挡伤数字更容易识别当前作物
+    private static string GetPlantDisplayName(BattleGridTileState tileState)
+    {
+        if (ModEntry.PlantDatabase.TryGetValue(tileState.PlantId, out Plants.PlantData? plantData)
+            && !string.IsNullOrWhiteSpace(plantData.Name))
+        {
+            return plantData.Name;
+        }
+
+        return "Plant";
     }
 
     // 战斗结束后在界面中央给出明确结果，避免玩家还以为能继续出牌

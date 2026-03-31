@@ -37,6 +37,7 @@ internal static class BattleTextStyles
     public static BattleTextStyle HeaderFarmHealth => Compact(0.82f);
 
     public static BattleTextStyle FieldPlantState => Compact(0.82f);
+    public static BattleTextStyle FieldIntentStack => Compact(0.72f);
     public static BattleTextStyle FieldPlantProtection => Compact(0.82f);
     public static BattleTextStyle FieldTemporaryProtection => Compact(0.82f);
 
