@@ -62,7 +62,7 @@ public sealed class ModEntry : Mod
     // 如果菜单已经打开，则再次按热键直接关闭
     private void OnButtonPressed(object? sender, ButtonPressedEventArgs eventArgs)
     {
-        if (!_config.ToggleBattleMenuKey.JustPressed())
+        if (!_config.ToggleBattleMenuKey.IsDown())
         {
             return;
         }
