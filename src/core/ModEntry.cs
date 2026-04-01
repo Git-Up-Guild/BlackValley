@@ -32,6 +32,8 @@ public sealed class ModEntry : Mod
     {
         Logger = Monitor;
         _config = helper.ReadConfig<ModConfig>();
+        ModLocalization.SetUseChinese(_config.UseChineseLocalization);
+        ModFontManager.Initialize(helper, Monitor);
         _battleAssets = new BattleAssets(helper);
 
         CardDatabase.Clear();
@@ -58,34 +60,28 @@ public sealed class ModEntry : Mod
             EnemyDatabase[enemy.Id] = enemy;
         }
 
-        helper.Events.Input.ButtonPressed += OnButtonPressed;
-        helper.Events.Input.ButtonReleased += OnButtonReleased;
         helper.Events.Input.ButtonsChanged += OnButtonsChanged;
 
         Monitor.Log(
-            $"BlackValley loaded | Hotkey: {_config.ToggleBattleMenuKey} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
+            $"BlackValley loaded | Hotkey: {_config.ToggleBattleMenuKey} | Position Debug: {_config.PrintPlayerPositionKey} | Language Toggle: {_config.ToggleLocalizationKey} | Language: {ModLocalization.GetLanguageDisplayName()} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
             LogLevel.Info);
-    }
-
-    // 记录每次按下的输入事件，方便跨平台排查热键是否被 SMAPI 收到
-    private void OnButtonPressed(object? sender, ButtonPressedEventArgs eventArgs)
-    {
-        Monitor.Log($"ButtonPressed: {eventArgs.Button}", LogLevel.Info);
-    }
-
-    // 记录每次松开的输入事件，便于对照按下和释放阶段是否都正常触发
-    private void OnButtonReleased(object? sender, ButtonReleasedEventArgs eventArgs)
-    {
-        Monitor.Log($"ButtonReleased: {eventArgs.Button}", LogLevel.Info);
     }
 
     // 统一在按键变化时处理开关逻辑
     // 这里按 SMAPI 推荐做法使用 ButtonsChanged + JustPressed
     private void OnButtonsChanged(object? sender, ButtonsChangedEventArgs eventArgs)
     {
-        Monitor.Log(
-            $"ButtonsChanged | Pressed: [{string.Join(", ", eventArgs.Pressed)}] | Released: [{string.Join(", ", eventArgs.Released)}]",
-            LogLevel.Info);
+        if (_config.PrintPlayerPositionKey.JustPressed())
+        {
+            HandlePrintPlayerPosition();
+            return;
+        }
+
+        if (_config.ToggleLocalizationKey.JustPressed())
+        {
+            HandleLocalizationToggle();
+            return;
+        }
 
         if (!_config.ToggleBattleMenuKey.JustPressed())
         {
@@ -111,5 +107,41 @@ public sealed class ModEntry : Mod
         {
             Monitor.Log($"Failed to open battle menu: {exception}", LogLevel.Error);
         }
+    }
+
+    // 允许在游戏运行时通过热键即时切换语言，并把选择写回配置
+    private void HandleLocalizationToggle()
+    {
+        _config.UseChineseLocalization = !_config.UseChineseLocalization;
+        ModLocalization.SetUseChinese(_config.UseChineseLocalization);
+        Helper.WriteConfig(_config);
+        Helper.Input.SuppressActiveKeybinds(_config.ToggleLocalizationKey);
+
+        Monitor.Log(
+            $"Localization toggled | Current language: {ModLocalization.GetLanguageDisplayName()}",
+            LogLevel.Info);
+    }
+
+    // 输出玩家当前所在地图、地块坐标和像素坐标，方便后续布置遭遇点
+    private void HandlePrintPlayerPosition()
+    {
+        Helper.Input.SuppressActiveKeybinds(_config.PrintPlayerPositionKey);
+
+        if (!Context.IsWorldReady || Game1.player == null || Game1.currentLocation == null)
+        {
+            Monitor.Log("Position debug requested, but no save is currently loaded.", LogLevel.Warn);
+            return;
+        }
+
+        var standingPixel = Game1.player.getStandingPosition();
+        var rawPosition = Game1.player.Position;
+        float tileX = standingPixel.X / (float)Game1.tileSize;
+        float tileY = standingPixel.Y / (float)Game1.tileSize;
+
+        string message =
+            $"Player position | Location: {Game1.currentLocation.NameOrUniqueName} | Tile: ({tileX:0.##}, {tileY:0.##}) | Standing Pixel: ({standingPixel.X}, {standingPixel.Y}) | Position: ({rawPosition.X:0.##}, {rawPosition.Y:0.##})";
+
+        Monitor.Log(message, LogLevel.Info);
+        Game1.addHUDMessage(new HUDMessage($"Tile ({tileX:0.##}, {tileY:0.##})", HUDMessage.newQuest_type));
     }
 }

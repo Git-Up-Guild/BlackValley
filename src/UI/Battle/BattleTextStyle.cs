@@ -28,9 +28,9 @@ internal static class BattleTextStyles
 {
     // 这套字体资源里 tinyFont 视觉上不一定比 smallFont 更小
     // 需要更紧凑的文字时，优先用带像素对齐的 smallFont 保守缩放
-    private static BattleTextStyle Dialogue(float scale = 1f) => new(Game1.dialogueFont, scale);
-    private static BattleTextStyle Small(float scale = 1f) => new(Game1.smallFont, scale);
-    private static BattleTextStyle Compact(float scale = 0.85f) => new(Game1.smallFont, scale);
+    private static BattleTextStyle Dialogue(float scale = 1f) => new(ModFontManager.GetDialogueFont(), scale);
+    private static BattleTextStyle Small(float scale = 1f) => new(ModFontManager.GetSmallFont(), scale);
+    private static BattleTextStyle Compact(float scale = 0.85f) => new(ModFontManager.GetSmallFont(), scale);
 
     public static BattleTextStyle HeaderTitle => Dialogue();
     public static BattleTextStyle HeaderTurn => Small();

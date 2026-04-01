@@ -63,7 +63,7 @@ public sealed partial class BattleMenu
         BattleTextStyle textStyle = BattleTextStyles.RoundIntro;
         float scale = textStyle.Scale * MathHelper.Lerp(RoundIntroStartScale, RoundIntroEndScale, easedProgress);
         float alpha = MathHelper.Lerp(1f, 0.78f, easedProgress);
-        string roundText = $"Round {_battleController.State.CurrentTurn}";
+        string roundText = ModLocalization.GetRoundIntroLabel(_battleController.State.CurrentTurn);
 
         Vector2 textSize = textStyle.Font.MeasureString(roundText) * scale;
         Vector2 textPosition = new(

@@ -15,8 +15,10 @@ namespace BlackValley.UI.Battle;
 /// </summary>
 internal static class BattlePlantSpriteRenderer
 {
+    private const string ParsnipSeedId = "472";
     private const int UnripeDisplayPhase = 2;
     private const int MatureDisplayFrame = 6;
+    private const int ParsnipMatureDisplayFrame = 5;
 
     private static readonly HashSet<string> LoggedMessages = new(StringComparer.Ordinal);
 
@@ -58,7 +60,7 @@ internal static class BattlePlantSpriteRenderer
             return false;
         }
 
-        Rectangle sourceRect = GetSourceRect(cropData.SpriteIndex, tileState.IsMature);
+        Rectangle sourceRect = GetSourceRect(cropData.SpriteIndex, plantData.VanillaSeedId, tileState.IsMature);
         Vector2 drawPosition = new(tileBounds.Center.X, tileBounds.Y + 32f);
 
         spriteBatch.Draw(
@@ -80,13 +82,23 @@ internal static class BattlePlantSpriteRenderer
     }
 
     // 原版作物每两行共用一组横向阶段帧，奇数行需要向右偏移 128 像素
-    private static Rectangle GetSourceRect(int spriteIndex, bool isMature)
+    private static Rectangle GetSourceRect(int spriteIndex, string seedId, bool isMature)
     {
-        int frame = isMature ? MatureDisplayFrame : UnripeDisplayPhase + 1;
+        int frame = isMature
+            ? GetMatureDisplayFrame(seedId)
+            : UnripeDisplayPhase + 1;
         int xOffset = spriteIndex % 2 != 0 ? 128 : 0;
         int x = Math.Min(240, frame * 16 + xOffset);
         int y = spriteIndex / 2 * 32;
         return new Rectangle(x, y, 16, 32);
+    }
+
+    // 防风草的成熟表现使用第 4 帧，避免当前原型里取到空白帧
+    private static int GetMatureDisplayFrame(string seedId)
+    {
+        return string.Equals(seedId, ParsnipSeedId, StringComparison.Ordinal)
+            ? ParsnipMatureDisplayFrame
+            : MatureDisplayFrame;
     }
 
     // 植物渲染每帧都会走，日志只记录一次，避免把控制台刷满

@@ -40,7 +40,7 @@ public sealed partial class BattleMenu
         DrawCharacters(spriteBatch);
         DrawBattleStatusPanels(spriteBatch);
         DrawHand(spriteBatch);
-        DrawButton(spriteBatch, _layout.EndTurnButtonBounds, "End Turn", BattleTextStyles.EndTurnButton);
+        DrawButton(spriteBatch, _layout.EndTurnButtonBounds, ModLocalization.GetEndTurnLabel(), BattleTextStyles.EndTurnButton);
         DrawButton(spriteBatch, _layout.CloseButtonBounds, "X", BattleTextStyles.CloseButton);
         DrawDragState(spriteBatch);
         DrawRoundIntroOverlay(spriteBatch);
@@ -56,7 +56,7 @@ public sealed partial class BattleMenu
     // 页头区域展示标题、回合数和农田生命值，属于整张面板的全局信息
     private void DrawHeader(SpriteBatch spriteBatch)
     {
-        string title = "Black Valley Battle Prototype";
+        string title = ModLocalization.GetBattleTitle();
         Vector2 titleSize = MeasureText(BattleTextStyles.HeaderTitle, title);
 
         DrawText(
@@ -68,7 +68,7 @@ public sealed partial class BattleMenu
                 _layout.HeaderTitleY),
             Game1.textColor);
 
-        string turnText = $"Turn: {_battleController.State.CurrentTurn}";
+        string turnText = ModLocalization.GetTurnLabel(_battleController.State.CurrentTurn);
         DrawText(
             spriteBatch,
             BattleTextStyles.HeaderTurn,
@@ -88,7 +88,7 @@ public sealed partial class BattleMenu
             2f,
             drawShadow: false);
 
-        string healthText = $"Farm HP: {_battleController.State.FarmHealth} / {_battleController.State.MaxFarmHealth}";
+        string healthText = ModLocalization.GetFarmHealthLabel(_battleController.State.FarmHealth, _battleController.State.MaxFarmHealth);
         Vector2 healthTextSize = MeasureText(BattleTextStyles.HeaderFarmHealth, healthText);
 
         DrawText(
@@ -153,7 +153,7 @@ public sealed partial class BattleMenu
                     DrawCenteredText(
                         spriteBatch,
                         BattleTextStyles.FieldPlantProtection,
-                        $"Guard {tileState.PersistentProtectionCharges}",
+                        ModLocalization.GetPersistentGuardLabel(tileState.PersistentProtectionCharges),
                         persistentProtectionBounds,
                         Color.Navy);
                 }
@@ -201,7 +201,7 @@ public sealed partial class BattleMenu
                     DrawCenteredText(
                         spriteBatch,
                         BattleTextStyles.FieldTemporaryProtection,
-                        $"Shield {tileState.TemporaryProtectionCharges}",
+                        ModLocalization.GetShieldLabel(tileState.TemporaryProtectionCharges),
                         temporaryProtectionBounds,
                         Color.White);
                 }
@@ -218,14 +218,14 @@ public sealed partial class BattleMenu
         DrawCenteredText(
             spriteBatch,
             BattleTextStyles.CharacterName,
-            "Farmer",
+            ModLocalization.GetFarmerLabel(),
             _layout.FarmerNameBounds,
             Game1.textColor);
 
         DrawCenteredText(
             spriteBatch,
             BattleTextStyles.CharacterName,
-            _battleController.EnemyData.Name,
+            ModLocalization.GetEnemyName(_battleController.EnemyData),
             _layout.EnemyNameBounds,
             Game1.textColor);
 
@@ -257,9 +257,7 @@ public sealed partial class BattleMenu
             _layout.MonsterIntentBounds.Height,
             Color.White);
 
-        string intentText = _battleController.State.MonsterIntentCount > 0
-            ? $"Infect x{_battleController.State.MonsterIntentCount}"
-            : "Idle";
+        string intentText = ModLocalization.GetMonsterIntentLabel(_battleController.State.MonsterIntentCount);
         DrawCenteredText(
             spriteBatch,
             BattleTextStyles.MonsterIntent,
@@ -301,7 +299,7 @@ public sealed partial class BattleMenu
         DrawCenteredText(
             spriteBatch,
             BattleTextStyles.PileCount,
-            $"Draw\n  {_battleController.State.CardManager.DrawPile.Count}",
+            ModLocalization.GetDrawPileLabel(_battleController.State.CardManager.DrawPile.Count),
             _layout.DrawPileBounds,
             Game1.textColor);
 
@@ -316,7 +314,7 @@ public sealed partial class BattleMenu
         DrawCenteredText(
             spriteBatch,
             BattleTextStyles.PileCount,
-            $"Discard\n   {_battleController.State.CardManager.DiscardPile.Count}",
+            ModLocalization.GetDiscardPileLabel(_battleController.State.CardManager.DiscardPile.Count),
             _layout.DiscardPileBounds,
             Game1.textColor);
 
@@ -325,7 +323,7 @@ public sealed partial class BattleMenu
             DrawCenteredText(
                 spriteBatch,
                 BattleTextStyles.TurnModifier,
-                $"Attack +{_battleController.State.BonusAttackDamageThisTurn}",
+                ModLocalization.GetAttackBonusLabel(_battleController.State.BonusAttackDamageThisTurn),
                 _layout.BonusAttackBounds,
                 Color.DarkRed);
         }
@@ -335,7 +333,7 @@ public sealed partial class BattleMenu
             DrawCenteredText(
                 spriteBatch,
                 BattleTextStyles.TurnModifier,
-                $"Infect -{_battleController.State.InfectionTierReductionThisTurn}",
+                ModLocalization.GetInfectionReductionLabel(_battleController.State.InfectionTierReductionThisTurn),
                 _layout.InfectionReductionBounds,
                 Color.DarkOliveGreen);
         }
@@ -451,7 +449,7 @@ public sealed partial class BattleMenu
         DrawRotatedWrappedCenteredText(
             spriteBatch,
             BattleTextStyles.CardName,
-            cardData.Name,
+            ModLocalization.GetCardName(cardData),
             cardFaceLayout.NameBounds,
             drawBounds,
             rotation,
@@ -460,7 +458,7 @@ public sealed partial class BattleMenu
 
         DrawRotatedPanel(spriteBatch, cardFaceLayout.IconBounds, drawBounds, rotation, BattleCardStyle.IconFillColor * alpha, BattleCardStyle.IconBorderColor * alpha, BattleCardStyle.PanelShadowColor * (0.12f * alpha));
         DrawRotatedCardIcon(spriteBatch, cardData, cardFaceLayout.IconBounds, drawBounds, rotation, alpha);
-        DrawRotatedCardDescription(spriteBatch, cardData.Description, cardFaceLayout.DescriptionBounds, drawBounds, BattleTextStyles.CardDescription, rotation, BattleCardStyle.DescriptionWrapWidthFactor, alpha);
+        DrawRotatedCardDescription(spriteBatch, ModLocalization.GetCardDescription(cardData), cardFaceLayout.DescriptionBounds, drawBounds, BattleTextStyles.CardDescription, rotation, BattleCardStyle.DescriptionWrapWidthFactor, alpha);
     }
 
     // 图标绘制优先读取真实贴图，缺失时退化为文字占位，保证卡面布局始终完整
@@ -495,7 +493,7 @@ public sealed partial class BattleMenu
         DrawRotatedCenteredText(
             spriteBatch,
             BattleTextStyles.CardFallbackIcon,
-            cardData.Type,
+            ModLocalization.GetCardFallbackTypeLabel(cardData.Type),
             iconDrawBounds,
             cardBounds,
             rotation,
@@ -950,7 +948,9 @@ public sealed partial class BattleMenu
     // 成熟植物用文字提醒可以收割，未成熟植物显示剩余成长回合
     private static string GetPlantStateLabel(BattleGridTileState tileState)
     {
-        return tileState.IsMature ? "Harvest" : $"Grow {tileState.GrowthTurnsRemaining}";
+        return tileState.IsMature
+            ? ModLocalization.GetHarvestLabel()
+            : ModLocalization.GetGrowLabel(tileState.GrowthTurnsRemaining);
     }
 
     // 战斗结束后在界面中央给出明确结果，避免玩家还以为能继续出牌
@@ -970,17 +970,18 @@ public sealed partial class BattleMenu
             overlayBounds.Height,
             Color.White);
 
-        Vector2 resultTextSize = MeasureText(BattleTextStyles.BattleResultTitle, _battleController.State.BattleResultText);
+        string localizedResultText = ModLocalization.GetBattleResultLabel(_battleController.State.BattleResultText);
+        Vector2 resultTextSize = MeasureText(BattleTextStyles.BattleResultTitle, localizedResultText);
         DrawText(
             spriteBatch,
             BattleTextStyles.BattleResultTitle,
-            _battleController.State.BattleResultText,
+            localizedResultText,
             new Vector2(
                 overlayBounds.Center.X - resultTextSize.X / 2f,
                 overlayBounds.Y + 24),
             Color.DarkRed);
 
-        string closeHint = "Press close to exit";
+        string closeHint = ModLocalization.GetBattleCloseHint();
         Vector2 closeHintSize = MeasureText(BattleTextStyles.BattleResultHint, closeHint);
         DrawText(
             spriteBatch,
