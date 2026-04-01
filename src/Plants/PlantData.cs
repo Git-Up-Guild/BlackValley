@@ -10,6 +10,7 @@ public class PlantData
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string IconId { get; set; } = string.Empty;
+    public string VanillaSeedId { get; set; } = string.Empty;
 
     /// <summary>
     /// 生长所需回合数，例如防风草为 1，甜瓜为 2

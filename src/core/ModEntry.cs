@@ -17,6 +17,8 @@ public sealed class ModEntry : Mod
     private ModConfig _config = null!;
     private BattleAssets _battleAssets = null!;
 
+    public static IMonitor Logger { get; private set; } = null!;
+
     public static Dictionary<string, CardData> CardDatabase = new();
     public static Dictionary<string, PlantData> PlantDatabase = new();
     public static Dictionary<string, EnemyBattleData> EnemyDatabase = new();
@@ -28,6 +30,7 @@ public sealed class ModEntry : Mod
     /// <param name="helper">SMAPI 提供的模组辅助接口</param>
     public override void Entry(IModHelper helper)
     {
+        Logger = Monitor;
         _config = helper.ReadConfig<ModConfig>();
         _battleAssets = new BattleAssets(helper);
 

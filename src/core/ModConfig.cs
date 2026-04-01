@@ -1,5 +1,4 @@
 using StardewModdingAPI.Utilities;
-
 namespace BlackValley;
 
 /// <summary>

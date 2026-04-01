@@ -273,14 +273,19 @@ internal sealed class BattleMenuLayout
     /// <param name="cardBounds">卡牌整体绘制区域</param>
     public BattleCardFaceLayout GetCardFaceLayout(Rectangle cardBounds)
     {
-        int horizontalPadding = Math.Max(12, cardBounds.Width / 10);
-        int topPadding = Math.Max(12, cardBounds.Height / 20);
-        int sectionGap = Math.Max(8, cardBounds.Height / 30);
+        int horizontalPadding = Math.Clamp(BattleCardStyle.ContentHorizontalPadding, 8, Math.Max(8, cardBounds.Width / 8));
+        int topPadding = Math.Clamp(BattleCardStyle.ContentTopPadding, 8, Math.Max(8, cardBounds.Height / 12));
+        int bottomPadding = Math.Clamp(BattleCardStyle.ContentBottomPadding, 8, Math.Max(8, cardBounds.Height / 12));
+        int sectionGap = Math.Max(2, BattleCardStyle.SectionGap);
+        int iconDescriptionGap = Math.Max(sectionGap, BattleCardStyle.IconDescriptionGap);
         int costSize = Math.Clamp(cardBounds.Width / 4, 28, 36);
         int nameHeight = Math.Clamp(BattleCardStyle.NameHeight, 28, cardBounds.Height / 3);
         int nameHorizontalOffset = Math.Max(0, BattleCardStyle.NameHorizontalOffset);
         int iconWidth = cardBounds.Width - horizontalPadding * 2;
-        int iconHeight = Math.Clamp(cardBounds.Height / 3, 52, 72);
+        int descriptionHeight = Math.Clamp(
+            BattleCardStyle.DescriptionMinHeight,
+            44,
+            Math.Max(44, cardBounds.Height / 2));
 
         Rectangle costBounds = new Rectangle(
             cardBounds.X + horizontalPadding - 6,
@@ -294,17 +299,22 @@ internal sealed class BattleMenuLayout
             Math.Max(24, cardBounds.Width - horizontalPadding * 2 - nameHorizontalOffset),
             nameHeight);
 
+        int iconTop = nameBounds.Bottom + sectionGap;
+        int iconHeight = Math.Max(
+            52,
+            cardBounds.Bottom - bottomPadding - descriptionHeight - iconDescriptionGap - iconTop);
+
         Rectangle iconBounds = new Rectangle(
             cardBounds.X + horizontalPadding,
-            nameBounds.Bottom + sectionGap,
+            iconTop,
             iconWidth,
             iconHeight);
 
         Rectangle descriptionBounds = new Rectangle(
             cardBounds.X + horizontalPadding,
-            iconBounds.Bottom + sectionGap,
+            iconBounds.Bottom + iconDescriptionGap,
             cardBounds.Width - horizontalPadding * 2,
-            Math.Max(40, cardBounds.Bottom - (iconBounds.Bottom + sectionGap) - topPadding));
+            Math.Max(40, cardBounds.Bottom - (iconBounds.Bottom + iconDescriptionGap) - bottomPadding));
 
         return new BattleCardFaceLayout(cardBounds, costBounds, nameBounds, iconBounds, descriptionBounds);
     }

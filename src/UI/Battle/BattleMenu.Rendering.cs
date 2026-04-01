@@ -10,6 +10,12 @@ namespace BlackValley.UI.Battle;
 
 public sealed partial class BattleMenu
 {
+    private const string SeedCardType = "Seed";
+    private const string AttackCardType = "Attack";
+    private const string DefaultAttackWeaponId = "0";
+    private const int VanillaObjectSpriteSize = 16;
+    private const int CardIconInnerPadding = 3;
+
     /// <summary>
     /// 绘制当前帧的完整战斗菜单
     /// </summary>
@@ -95,7 +101,7 @@ public sealed partial class BattleMenu
             Color.DarkGreen);
     }
 
-    // 网格绘制顺序固定为：地块底图 -> 怪物意图预警 -> 感染覆盖层 -> 临时护盾 -> 植物占位表现
+    // 网格绘制顺序固定为：地块底图 -> 怪物意图预警 -> 感染覆盖层 -> 临时护盾 -> 植物表现
     private void DrawFieldGrid(SpriteBatch spriteBatch)
     {
         for (int row = 0; row < BattleMenuLayout.FieldRowCount; row++)
@@ -154,37 +160,34 @@ public sealed partial class BattleMenu
 
                 if (tileState.HasPlant)
                 {
-                    Rectangle plantBounds = new Rectangle(
-                        tileBounds.X + 8,
-                        tileBounds.Y + 8,
-                        BattleMenuLayout.FieldTileSize - 16,
-                        BattleMenuLayout.FieldTileSize - 16);
                     Rectangle plantStateBounds = new Rectangle(
-                        plantBounds.X,
-                        plantBounds.Y,
-                        plantBounds.Width,
-                        18);
-                    Rectangle plantNameBounds = new Rectangle(
                         tileBounds.X + 4,
-                        tileBounds.Bottom - 24,
+                        tileBounds.Y + 2,
                         tileBounds.Width - 8,
                         16);
 
-                    Color plantColor = tileState.IsMature ? Color.LightBlue * 0.85f : Color.LightGreen * 0.85f;
-                    spriteBatch.Draw(Game1.staminaRect, plantBounds, plantColor);
+                    bool drewPlantSprite = BattlePlantSpriteRenderer.TryDrawPlant(
+                        spriteBatch,
+                        tileState,
+                        tileBounds);
+
+                    if (!drewPlantSprite)
+                    {
+                        Rectangle plantFallbackBounds = new Rectangle(
+                            tileBounds.X + 8,
+                            tileBounds.Y + 8,
+                            BattleMenuLayout.FieldTileSize - 16,
+                            BattleMenuLayout.FieldTileSize - 16);
+                        Color plantFallbackColor = tileState.IsMature ? Color.LightBlue * 0.85f : Color.LightGreen * 0.85f;
+                        spriteBatch.Draw(Game1.staminaRect, plantFallbackBounds, plantFallbackColor);
+                    }
+
                     DrawCenteredText(
                         spriteBatch,
                         BattleTextStyles.FieldPlantState,
                         GetPlantStateLabel(tileState),
                         plantStateBounds,
                         Color.DarkGreen);
-
-                    DrawCenteredText(
-                        spriteBatch,
-                        BattleTextStyles.FieldPlantProtection,
-                        GetPlantDisplayName(tileState),
-                        plantNameBounds,
-                        Color.Navy);
                 }
 
                 if (tileState.TemporaryProtectionCharges > 0)
@@ -463,39 +466,28 @@ public sealed partial class BattleMenu
     // 图标绘制优先读取真实贴图，缺失时退化为文字占位，保证卡面布局始终完整
     private void DrawCardIcon(SpriteBatch spriteBatch, CardData cardData, Rectangle iconBounds, float alpha)
     {
-        Rectangle iconDrawBounds = new Rectangle(
-            iconBounds.X + 8,
-            iconBounds.Y + 8,
-            iconBounds.Width - 16,
-            iconBounds.Height - 16);
-
-        if (_battleAssets.TryGetCardIconTexture(cardData.IconId, out Texture2D iconTexture))
-        {
-            spriteBatch.Draw(iconTexture, iconDrawBounds, Color.White * alpha);
-            return;
-        }
-
-        spriteBatch.Draw(Game1.staminaRect, iconDrawBounds, Color.SlateGray * (0.35f * alpha));
-        DrawCenteredText(
-            spriteBatch,
-            BattleTextStyles.CardFallbackIcon,
-            cardData.Type,
-            iconDrawBounds,
-            Color.DimGray);
+        DrawRotatedCardIcon(spriteBatch, cardData, iconBounds, iconBounds, 0f, alpha);
     }
 
     // 斜置卡牌的图标和占位文字需要跟随整张卡一起旋转
     private void DrawRotatedCardIcon(SpriteBatch spriteBatch, CardData cardData, Rectangle iconBounds, Rectangle cardBounds, float rotation, float alpha)
     {
+        int iconPadding = Math.Max(0, CardIconInnerPadding);
         Rectangle iconDrawBounds = new Rectangle(
-            iconBounds.X + 8,
-            iconBounds.Y + 8,
-            iconBounds.Width - 16,
-            iconBounds.Height - 16);
+            iconBounds.X + iconPadding,
+            iconBounds.Y + iconPadding,
+            iconBounds.Width - iconPadding * 2,
+            iconBounds.Height - iconPadding * 2);
 
         if (_battleAssets.TryGetCardIconTexture(cardData.IconId, out Texture2D iconTexture))
         {
-            DrawRotatedTexture(spriteBatch, iconTexture, iconDrawBounds, cardBounds, rotation, Color.White * alpha);
+            Rectangle fittedBounds = GetAspectFitBounds(iconDrawBounds, iconTexture.Width, iconTexture.Height, 0.94f);
+            DrawRotatedTexture(spriteBatch, iconTexture, fittedBounds, cardBounds, rotation, Color.White * alpha);
+            return;
+        }
+
+        if (TryDrawGeneratedCardIcon(spriteBatch, cardData, iconDrawBounds, cardBounds, rotation, alpha))
+        {
             return;
         }
 
@@ -508,6 +500,208 @@ public sealed partial class BattleMenu
             cardBounds,
             rotation,
             Color.DimGray);
+    }
+
+    // 当独立贴图缺失时，按卡牌类型生成更直观的图标
+    private bool TryDrawGeneratedCardIcon(
+        SpriteBatch spriteBatch,
+        CardData cardData,
+        Rectangle iconDrawBounds,
+        Rectangle cardBounds,
+        float rotation,
+        float alpha)
+    {
+        if (string.Equals(cardData.Type, SeedCardType, StringComparison.Ordinal))
+        {
+            return TryDrawSeedCardIcon(spriteBatch, cardData, iconDrawBounds, cardBounds, rotation, alpha);
+        }
+
+        if (string.Equals(cardData.Type, AttackCardType, StringComparison.Ordinal))
+        {
+            return TryDrawAttackCardIcon(spriteBatch, iconDrawBounds, cardBounds, rotation, alpha);
+        }
+
+        if (string.Equals(cardData.Type, DefenseCardType, StringComparison.Ordinal))
+        {
+            DrawDefenseCardIcon(spriteBatch, cardData, iconDrawBounds, cardBounds, rotation, alpha);
+            return true;
+        }
+
+        return false;
+    }
+
+    // 种子牌直接复用原版物品图标，保证作物和卡面能一眼对上
+    private static bool TryDrawSeedCardIcon(
+        SpriteBatch spriteBatch,
+        CardData cardData,
+        Rectangle iconDrawBounds,
+        Rectangle cardBounds,
+        float rotation,
+        float alpha)
+    {
+        if (!ModEntry.PlantDatabase.TryGetValue(cardData.PlantId, out var plantData)
+            || string.IsNullOrWhiteSpace(plantData.VanillaSeedId)
+            || Game1.objectSpriteSheet == null
+            || !int.TryParse(plantData.VanillaSeedId, out int objectSpriteIndex))
+        {
+            return false;
+        }
+
+        Rectangle sourceRect = Game1.getSourceRectForStandardTileSheet(
+            Game1.objectSpriteSheet,
+            objectSpriteIndex,
+            VanillaObjectSpriteSize,
+            VanillaObjectSpriteSize);
+
+        Rectangle fittedBounds = GetAspectFitBounds(iconDrawBounds, sourceRect.Width, sourceRect.Height, 0.88f);
+        DrawRotatedTexture(spriteBatch, Game1.objectSpriteSheet, sourceRect, fittedBounds, cardBounds, rotation, Color.White * alpha);
+        return true;
+    }
+
+    // 攻击牌直接复用星露谷原版武器图标，避免再维护一套自定义素材
+    private static bool TryDrawAttackCardIcon(
+        SpriteBatch spriteBatch,
+        Rectangle iconDrawBounds,
+        Rectangle cardBounds,
+        float rotation,
+        float alpha)
+    {
+        string? qualifiedWeaponId = ItemRegistry.ManuallyQualifyItemId(DefaultAttackWeaponId, ItemRegistry.type_weapon, overrideIfQualified: false);
+        if (string.IsNullOrEmpty(qualifiedWeaponId))
+        {
+            return false;
+        }
+
+        var weaponData = ItemRegistry.GetData(qualifiedWeaponId);
+        if (weaponData == null || weaponData.IsErrorItem)
+        {
+            return false;
+        }
+
+        Texture2D? weaponTexture = weaponData.GetTexture();
+        if (weaponTexture == null)
+        {
+            return false;
+        }
+
+        Rectangle sourceRect = weaponData.GetSourceRect(0, null);
+        Rectangle fittedBounds = GetAspectFitBounds(iconDrawBounds, sourceRect.Width, sourceRect.Height, 0.92f);
+        DrawRotatedTexture(spriteBatch, weaponTexture, sourceRect, fittedBounds, cardBounds, rotation, Color.White * alpha);
+        return true;
+    }
+
+    // 防御牌复用现有地块贴图，并按照卡牌 Shape 自动排版成对应阵型
+    private void DrawDefenseCardIcon(
+        SpriteBatch spriteBatch,
+        CardData cardData,
+        Rectangle iconDrawBounds,
+        Rectangle cardBounds,
+        float rotation,
+        float alpha)
+    {
+        List<Rectangle> tileBounds = GetShapeIconTileBounds(cardData.Shape, iconDrawBounds);
+        if (tileBounds.Count == 0)
+        {
+            Rectangle fallbackBounds = GetAspectFitBounds(iconDrawBounds, _battleAssets.FieldTileTexture.Width, _battleAssets.FieldTileTexture.Height, 0.9f);
+            DrawRotatedTexture(spriteBatch, _battleAssets.FieldTileTexture, fallbackBounds, cardBounds, rotation, Color.White * alpha);
+            return;
+        }
+
+        foreach (Rectangle tileBoundsRect in tileBounds)
+        {
+            Rectangle glowBounds = new(tileBoundsRect.X - 1, tileBoundsRect.Y - 1, tileBoundsRect.Width + 2, tileBoundsRect.Height + 2);
+            DrawRotatedTexture(spriteBatch, Game1.staminaRect, glowBounds, cardBounds, rotation, Color.CornflowerBlue * (0.2f * alpha));
+            DrawRotatedTexture(spriteBatch, _battleAssets.FieldTileTexture, tileBoundsRect, cardBounds, rotation, Color.White * alpha);
+
+            int inset = Math.Max(2, tileBoundsRect.Width / 10);
+            Rectangle overlayBounds = new(
+                tileBoundsRect.X + inset,
+                tileBoundsRect.Y + inset,
+                Math.Max(1, tileBoundsRect.Width - inset * 2),
+                Math.Max(1, tileBoundsRect.Height - inset * 2));
+
+            DrawRotatedTexture(spriteBatch, Game1.staminaRect, overlayBounds, cardBounds, rotation, Color.CornflowerBlue * (0.2f * alpha));
+        }
+    }
+
+    // 统一把 Shape 换算为图标区域内的缩略地块矩形，避免不同防御牌手调坐标
+    private static List<Rectangle> GetShapeIconTileBounds(List<List<int>> shape, Rectangle iconDrawBounds)
+    {
+        List<Point> offsets = new();
+        foreach (List<int> offset in shape)
+        {
+            if (offset.Count < 2)
+            {
+                continue;
+            }
+
+            offsets.Add(new Point(offset[0], offset[1]));
+        }
+
+        if (offsets.Count == 0)
+        {
+            return new List<Rectangle>();
+        }
+
+        int minColumn = offsets[0].X;
+        int maxColumn = offsets[0].X;
+        int minRow = offsets[0].Y;
+        int maxRow = offsets[0].Y;
+
+        foreach (Point offset in offsets)
+        {
+            minColumn = Math.Min(minColumn, offset.X);
+            maxColumn = Math.Max(maxColumn, offset.X);
+            minRow = Math.Min(minRow, offset.Y);
+            maxRow = Math.Max(maxRow, offset.Y);
+        }
+
+        int columnCount = maxColumn - minColumn + 1;
+        int rowCount = maxRow - minRow + 1;
+        int gap = Math.Clamp(Math.Min(iconDrawBounds.Width, iconDrawBounds.Height) / 18, 2, 6);
+        int tileSize = Math.Max(
+            1,
+            (int)MathF.Floor(MathF.Min(
+                (iconDrawBounds.Width - gap * (columnCount - 1)) / (float)columnCount,
+                (iconDrawBounds.Height - gap * (rowCount - 1)) / (float)rowCount)));
+
+        int totalWidth = tileSize * columnCount + gap * (columnCount - 1);
+        int totalHeight = tileSize * rowCount + gap * (rowCount - 1);
+        int startX = iconDrawBounds.Center.X - totalWidth / 2;
+        int startY = iconDrawBounds.Center.Y - totalHeight / 2;
+
+        List<Rectangle> tileBounds = new(offsets.Count);
+        foreach (Point offset in offsets)
+        {
+            tileBounds.Add(new Rectangle(
+                startX + (offset.X - minColumn) * (tileSize + gap),
+                startY + (offset.Y - minRow) * (tileSize + gap),
+                tileSize,
+                tileSize));
+        }
+
+        return tileBounds;
+    }
+
+    // 图标资源统一按比例缩放到目标区域内，避免不同来源的素材被强行拉伸
+    private static Rectangle GetAspectFitBounds(Rectangle bounds, int sourceWidth, int sourceHeight, float fillFactor)
+    {
+        if (sourceWidth <= 0 || sourceHeight <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
+        {
+            return bounds;
+        }
+
+        float scale = MathF.Min(bounds.Width / (float)sourceWidth, bounds.Height / (float)sourceHeight);
+        scale *= Math.Clamp(fillFactor, 0.1f, 1f);
+
+        int drawWidth = Math.Max(1, (int)MathF.Round(sourceWidth * scale));
+        int drawHeight = Math.Max(1, (int)MathF.Round(sourceHeight * scale));
+
+        return new Rectangle(
+            bounds.Center.X - drawWidth / 2,
+            bounds.Center.Y - drawHeight / 2,
+            drawWidth,
+            drawHeight);
     }
 
     // 描述区域按宽度自动折行，避免文本超出卡面边界
@@ -696,6 +890,19 @@ public sealed partial class BattleMenu
         float rotation,
         Color color)
     {
+        DrawRotatedTexture(spriteBatch, texture, null, targetBounds, cardBounds, rotation, color);
+    }
+
+    // 支持带 sourceRect 的旋转绘制，方便直接复用原版图集中的单个图标
+    private static void DrawRotatedTexture(
+        SpriteBatch spriteBatch,
+        Texture2D texture,
+        Rectangle? sourceRect,
+        Rectangle targetBounds,
+        Rectangle cardBounds,
+        float rotation,
+        Color color)
+    {
         if (targetBounds.Width <= 0 || targetBounds.Height <= 0)
         {
             return;
@@ -705,9 +912,11 @@ public sealed partial class BattleMenu
         Vector2 cardTopLeft = new(cardBounds.X, cardBounds.Y);
         Vector2 targetTopLeftLocal = new(targetBounds.X - cardBounds.X, targetBounds.Y - cardBounds.Y);
         Vector2 desiredOriginInDestination = cardOrigin - targetTopLeftLocal;
+        int sourceWidth = sourceRect?.Width ?? texture.Width;
+        int sourceHeight = sourceRect?.Height ?? texture.Height;
         Vector2 scale = new(
-            targetBounds.Width / (float)texture.Width,
-            targetBounds.Height / (float)texture.Height);
+            targetBounds.Width / (float)sourceWidth,
+            targetBounds.Height / (float)sourceHeight);
         Vector2 sourceOrigin = new(
             desiredOriginInDestination.X / scale.X,
             desiredOriginInDestination.Y / scale.Y);
@@ -715,7 +924,7 @@ public sealed partial class BattleMenu
         spriteBatch.Draw(
             texture,
             cardTopLeft + cardOrigin,
-            null,
+            sourceRect,
             color,
             rotation,
             sourceOrigin,
@@ -742,18 +951,6 @@ public sealed partial class BattleMenu
     private static string GetPlantStateLabel(BattleGridTileState tileState)
     {
         return tileState.IsMature ? "Harvest" : $"Grow {tileState.GrowthTurnsRemaining}";
-    }
-
-    // 地块底部优先显示植物名字，比固定的挡伤数字更容易识别当前作物
-    private static string GetPlantDisplayName(BattleGridTileState tileState)
-    {
-        if (ModEntry.PlantDatabase.TryGetValue(tileState.PlantId, out Plants.PlantData? plantData)
-            && !string.IsNullOrWhiteSpace(plantData.Name))
-        {
-            return plantData.Name;
-        }
-
-        return "Plant";
     }
 
     // 战斗结束后在界面中央给出明确结果，避免玩家还以为能继续出牌

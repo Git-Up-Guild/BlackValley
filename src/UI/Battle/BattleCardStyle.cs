@@ -16,8 +16,16 @@ internal static class BattleCardStyle
     public static readonly Color IconFillColor = new(233, 206, 138);
     public static readonly Color IconBorderColor = new(137, 103, 53);
 
+    public const int ContentHorizontalPadding = 10;
+    public const int ContentTopPadding = 5;
+    public const int ContentBottomPadding = 80;
+    public const int SectionGap = 4;
+    public const int IconDescriptionGap = 16;
+    public const int IconInnerPadding = 3;
+    public const int DescriptionMinHeight = 72;
+
     public const int NameHorizontalOffset = 25;
-    public const int NameTopOffset = 4;
+    public const int NameTopOffset = -8;
     public const int NameHeight = 46;
     public const float NameWrapWidthFactor = 0.8f;
     public const float DescriptionWrapWidthFactor = 1f;
