@@ -16,6 +16,7 @@ internal sealed class BattleController
 {
     private const string SeedCardType = "Seed";
     private const string DefenseCardType = "Defense";
+    private const string DrawCardType = "Draw";
     private const string BattleVictoryText = "Victory";
     private const string BattleDefeatText = "Farm Lost";
 
@@ -101,6 +102,29 @@ internal sealed class BattleController
         }
 
         CompleteCardPlay(card);
+        return true;
+    }
+
+    /// <summary>
+    /// 尝试打出一张不需要目标的功能牌
+    /// 当前用于 0 费抽牌卡
+    /// </summary>
+    /// <param name="card">当前打出的手牌实例</param>
+    public bool TryPlayCardWithoutTarget(CardInstance card)
+    {
+        if (!CanPlayCard(card))
+        {
+            return false;
+        }
+
+        if (!string.Equals(card.Data.Type, DrawCardType, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        int drawCount = Math.Max(1, card.Data.DrawCount);
+        CompleteCardPlay(card);
+        State.CardManager.DrawCards(drawCount);
         return true;
     }
 

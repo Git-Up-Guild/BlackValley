@@ -19,6 +19,26 @@
     "Description": "Deal 1 damage to the monster"
   },
   {
+    "Id": "player_draw_quick",
+    "Name": "Quick Draw",
+    "Owner": "Player",
+    "Type": "Draw",
+    "Cost": 0,
+    "CopyCount": 2,
+    "TargetType": "None",
+    "ShapeId": "",
+    "IconId": "Draw_Quick",
+    "Damage": 0,
+    "DrawCount": 1,
+    "ProtectionChargesPerTile": 0,
+    "InfectionTier": 0,
+    "DefenseValue": 0,
+    "PlantId": "",
+    "Shape": [],
+    "DowngradeCardIds": [],
+    "Description": "Draw 1 card"
+  },
+  {
     "Id": "player_seed_parsnip",
     "Name": "Parsnip Seed",
     "Owner": "Player",

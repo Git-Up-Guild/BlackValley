@@ -192,6 +192,10 @@ public sealed partial class BattleMenu
         {
             isValidTarget = TryPlayEnemyCard(card, x, y);
         }
+        else if (card.Data.TargetType == NoTargetType)
+        {
+            isValidTarget = _battleController.TryPlayCardWithoutTarget(card);
+        }
         else if (card.Data.TargetType.StartsWith(GridTargetPrefix, System.StringComparison.Ordinal))
         {
             isValidTarget = TryPlayGridCard(card, x, y);

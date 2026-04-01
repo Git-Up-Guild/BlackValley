@@ -20,6 +20,7 @@ public sealed partial class BattleMenu : IClickableMenu
 
     private const string EnemyTargetType = "Enemy";
     private const string GridTargetPrefix = "Grid";
+    private const string NoTargetType = "None";
     private const string DefenseCardType = "Defense";
 
     private readonly BattleAssets _battleAssets;

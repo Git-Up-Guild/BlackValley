@@ -57,6 +57,20 @@ public class CardManager
             // 攻击牌的目标是敌人
             DrawPile.Add(new CardData { Id = $"test_strike_{i}", Name = "Basic Strike", Owner = "Player", Type = "Attack", Cost = 1, TargetType = "Enemy", Damage = 6 });
         }
+        for (int i = 0; i < 2; i++)
+        {
+            // 抽牌牌不需要目标，打出后直接抽 1 张
+            DrawPile.Add(new CardData
+            {
+                Id = $"test_draw_{i}",
+                Name = "Quick Draw",
+                Owner = "Player",
+                Type = "Draw",
+                Cost = 0,
+                TargetType = "None",
+                DrawCount = 1
+            });
+        }
         for (int i = 0; i < 4; i++)
         {
             // 种子牌的目标是网格，形状为单格 [0,0]
