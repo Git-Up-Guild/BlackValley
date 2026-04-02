@@ -1,11 +1,13 @@
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
+using StardewValley.Menus;
 using BlackValley.Cards;
 using BlackValley.Monsters;
 using BlackValley.Plants;
 using BlackValley.UI.Battle;
 using BlackValley.World;
+using System.IO;
 
 namespace BlackValley;
 
@@ -15,9 +17,13 @@ namespace BlackValley;
 /// </summary>
 public sealed class ModEntry : Mod
 {
+    private const string BundledSavesFolderName = "bundled-save";
+
     private ModConfig _config = null!;
     private BattleAssets _battleAssets = null!;
     private FarmEncounterManager _farmEncounterManager = null!;
+    private string? _bundledSaveSlotName;
+    private bool _hasAttemptedBundledSaveAutoLoadThisSession;
 
     public static IMonitor Logger { get; private set; } = null!;
 
@@ -38,6 +44,8 @@ public sealed class ModEntry : Mod
         ModFontManager.Initialize(helper, Monitor);
         _battleAssets = new BattleAssets(helper);
         _farmEncounterManager = new FarmEncounterManager(helper, Monitor, _battleAssets);
+        _bundledSaveSlotName = ResolveBundledSaveSlotName();
+        InstallBundledSaveIfNeeded();
 
         CardDatabase.Clear();
         PlantDatabase.Clear();
@@ -70,7 +78,7 @@ public sealed class ModEntry : Mod
         helper.Events.Input.ButtonsChanged += OnButtonsChanged;
 
         Monitor.Log(
-            $"BlackValley loaded | Encounter: Ghost Proximity | Position Debug: {_config.PrintPlayerPositionKey} | Language Toggle: {_config.ToggleLocalizationKey} | Language: {ModLocalization.GetLanguageDisplayName()} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
+            $"BlackValley loaded | Encounter: Ghost Proximity | Position Debug: {_config.PrintPlayerPositionKey} | Language Toggle: {_config.ToggleLocalizationKey} | Bundled Save: {_bundledSaveSlotName ?? "None"} | Language: {ModLocalization.GetLanguageDisplayName()} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
             LogLevel.Info);
     }
 
@@ -89,6 +97,7 @@ public sealed class ModEntry : Mod
     // 世界层幽灵只需要待机动画，所以每 tick 更新一次即可
     private void OnUpdateTicked(object? sender, UpdateTickedEventArgs eventArgs)
     {
+        TryAutoLoadBundledSave();
         _farmEncounterManager.Update();
 
         bool canTriggerEncounter = Game1.activeClickableMenu == null;
@@ -188,6 +197,105 @@ public sealed class ModEntry : Mod
         if (Context.IsWorldReady && Game1.player != null)
         {
             Game1.player.health = 0;
+        }
+    }
+
+    // 模组包里可以附带一份主档；这里解析出唯一的存档文件夹名
+    private string? ResolveBundledSaveSlotName()
+    {
+        string bundledSavesRoot = Path.Combine(Helper.DirectoryPath, "assets", BundledSavesFolderName);
+        if (!Directory.Exists(bundledSavesRoot))
+        {
+            return null;
+        }
+
+        foreach (string directoryPath in Directory.GetDirectories(bundledSavesRoot))
+        {
+            string? directoryName = Path.GetFileName(directoryPath);
+            if (!string.IsNullOrWhiteSpace(directoryName))
+            {
+                return directoryName;
+            }
+        }
+
+        return null;
+    }
+
+    // 首次安装到主机时，把模组附带的那份存档复制进 Stardew 的原生存档目录
+    private void InstallBundledSaveIfNeeded()
+    {
+        if (string.IsNullOrWhiteSpace(_bundledSaveSlotName))
+        {
+            return;
+        }
+
+        string sourcePath = Path.Combine(Helper.DirectoryPath, "assets", BundledSavesFolderName, _bundledSaveSlotName);
+        string targetPath = Path.Combine(Constants.SavesPath, _bundledSaveSlotName);
+        if (!Directory.Exists(sourcePath) || Directory.Exists(targetPath))
+        {
+            return;
+        }
+
+        CopyDirectory(sourcePath, targetPath);
+        Monitor.Log($"Installed bundled save '{_bundledSaveSlotName}' into the local saves folder.", LogLevel.Info);
+    }
+
+    // 新启动到标题界面时，如果本机已经安装了模组附带存档，就直接调用原版加载流程
+    private void TryAutoLoadBundledSave()
+    {
+        if (_hasAttemptedBundledSaveAutoLoadThisSession
+            || Context.IsWorldReady
+            || string.IsNullOrWhiteSpace(_bundledSaveSlotName)
+            || Game1.currentLoader != null
+            || Game1.activeClickableMenu is not TitleMenu)
+        {
+            return;
+        }
+
+        _hasAttemptedBundledSaveAutoLoadThisSession = true;
+
+        if (!DoesBundledSaveExist(_bundledSaveSlotName))
+        {
+            return;
+        }
+
+        Monitor.Log(
+            $"Auto-loading bundled save '{_bundledSaveSlotName}'.",
+            LogLevel.Info);
+        SaveGame.Load(_bundledSaveSlotName);
+    }
+
+    private static bool DoesBundledSaveExist(string slotName)
+    {
+        if (string.IsNullOrWhiteSpace(slotName))
+        {
+            return false;
+        }
+
+        return Directory.Exists(Path.Combine(Constants.SavesPath, slotName));
+    }
+
+    private static void CopyDirectory(string sourcePath, string targetPath)
+    {
+        Directory.CreateDirectory(targetPath);
+
+        foreach (string directoryPath in Directory.GetDirectories(sourcePath, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = Path.GetRelativePath(sourcePath, directoryPath);
+            Directory.CreateDirectory(Path.Combine(targetPath, relativePath));
+        }
+
+        foreach (string filePath in Directory.GetFiles(sourcePath, "*", SearchOption.AllDirectories))
+        {
+            string relativePath = Path.GetRelativePath(sourcePath, filePath);
+            string destinationPath = Path.Combine(targetPath, relativePath);
+            string? destinationDirectory = Path.GetDirectoryName(destinationPath);
+            if (!string.IsNullOrWhiteSpace(destinationDirectory))
+            {
+                Directory.CreateDirectory(destinationDirectory);
+            }
+
+            File.Copy(filePath, destinationPath, overwrite: false);
         }
     }
 }
