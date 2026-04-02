@@ -90,6 +90,11 @@ public sealed partial class BattleMenu
     /// <param name="key">当前按下的键位</param>
     public override void receiveKeyPress(Keys key)
     {
+        if (_battleController.State.IsBattleOver)
+        {
+            return;
+        }
+
         if (Game1.options.menuButton.Contains(new InputButton(key)) || key == Keys.Escape)
         {
             CloseMenu();
@@ -138,15 +143,15 @@ public sealed partial class BattleMenu
     // 按钮命中统一在这里分发，避免输入入口继续膨胀
     private bool TryHandleButtonClick(int x, int y)
     {
+        if (_battleController.State.IsBattleOver)
+        {
+            return false;
+        }
+
         if (_layout.CloseButtonBounds.Contains(x, y))
         {
             CloseMenu();
             return true;
-        }
-
-        if (_battleController.State.IsBattleOver)
-        {
-            return false;
         }
 
         if (_layout.EndTurnButtonBounds.Contains(x, y))
@@ -273,11 +278,15 @@ public sealed partial class BattleMenu
     }
 
     // 菜单关闭收口放在同一个方法里，保证音效、拖拽状态和 UI 关闭流程一致
-    private void CloseMenu()
+    private void CloseMenu(bool playCloseSound = true)
     {
         ClearHandHoverState();
         _draggedCard = null;
-        Game1.playSound("bigDeSelect");
+        if (playCloseSound)
+        {
+            Game1.playSound("bigDeSelect");
+        }
+
         Game1.exitActiveMenu();
     }
 }

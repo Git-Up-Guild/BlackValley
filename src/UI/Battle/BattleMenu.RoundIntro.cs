@@ -24,6 +24,7 @@ public sealed partial class BattleMenu
     {
         base.update(time);
         UpdateRoundIntro(time);
+        UpdateBattleResultFlow(time);
     }
 
     // 回合开始时播放中间的 Round 文案缩放动画
@@ -91,5 +92,31 @@ public sealed partial class BattleMenu
             scale,
             SpriteEffects.None,
             1f);
+    }
+
+    // 战斗结束后先播放结果与世界反馈，再在短暂停顿后自动退出菜单
+    private void UpdateBattleResultFlow(GameTime time)
+    {
+        if (!_battleController.State.IsBattleOver)
+        {
+            _hasAppliedBattleResultEffects = false;
+            _battleResultElapsedSeconds = 0f;
+            return;
+        }
+
+        if (!_hasAppliedBattleResultEffects)
+        {
+            _hasAppliedBattleResultEffects = true;
+            _battleResultElapsedSeconds = 0f;
+            _onBattleResolved?.Invoke(_battleController.DidPlayerWin);
+        }
+
+        _battleResultElapsedSeconds += (float)time.ElapsedGameTime.TotalSeconds;
+        if (_battleResultElapsedSeconds < BattleResultAutoCloseDelaySeconds)
+        {
+            return;
+        }
+
+        CloseMenu(playCloseSound: false);
     }
 }

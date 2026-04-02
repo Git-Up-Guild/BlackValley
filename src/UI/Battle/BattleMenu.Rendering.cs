@@ -15,6 +15,8 @@ public sealed partial class BattleMenu
     private const string DefaultAttackWeaponId = "0";
     private const int VanillaObjectSpriteSize = 16;
     private const int CardIconInnerPadding = 3;
+    private const float BattleWorldOverlayOpacity = 0.85f;
+    private static readonly Color MenuOverlayColor = new(244, 232, 205);
 
     /// <summary>
     /// 绘制当前帧的完整战斗菜单
@@ -22,26 +24,19 @@ public sealed partial class BattleMenu
     /// <param name="spriteBatch">当前用于绘制菜单的 SpriteBatch</param>
     public override void draw(SpriteBatch spriteBatch)
     {
-        spriteBatch.Draw(
-            Game1.fadeToBlackRect,
-            new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
-            Color.Black * 0.35f);
-
-        IClickableMenu.drawTextureBox(
-            spriteBatch,
-            _layout.PanelBounds.X,
-            _layout.PanelBounds.Y,
-            _layout.PanelBounds.Width,
-            _layout.PanelBounds.Height,
-            Color.White);
-
+        DrawWorldOverlay(spriteBatch);
         DrawHeader(spriteBatch);
         DrawFieldGrid(spriteBatch);
         DrawCharacters(spriteBatch);
         DrawBattleStatusPanels(spriteBatch);
         DrawHand(spriteBatch);
-        DrawButton(spriteBatch, _layout.EndTurnButtonBounds, ModLocalization.GetEndTurnLabel(), BattleTextStyles.EndTurnButton);
-        DrawButton(spriteBatch, _layout.CloseButtonBounds, "X", BattleTextStyles.CloseButton);
+
+        if (!_battleController.State.IsBattleOver)
+        {
+            DrawButton(spriteBatch, _layout.EndTurnButtonBounds, ModLocalization.GetEndTurnLabel(), BattleTextStyles.EndTurnButton);
+            DrawButton(spriteBatch, _layout.CloseButtonBounds, "X", BattleTextStyles.CloseButton);
+        }
+
         DrawDragState(spriteBatch);
         DrawRoundIntroOverlay(spriteBatch);
 
@@ -51,6 +46,20 @@ public sealed partial class BattleMenu
         }
 
         drawMouse(spriteBatch);
+    }
+
+    // 战斗现在直接叠在世界场景上，因此补一层原版菜单风格的半透明底色来压住背景杂讯
+    private static void DrawWorldOverlay(SpriteBatch spriteBatch)
+    {
+        if (BattleWorldOverlayOpacity <= 0f || Game1.staminaRect == null)
+        {
+            return;
+        }
+
+        spriteBatch.Draw(
+            Game1.staminaRect,
+            new Rectangle(0, 0, Game1.uiViewport.Width, Game1.uiViewport.Height),
+            MenuOverlayColor * BattleWorldOverlayOpacity);
     }
 
     // 页头区域展示标题、回合数和农田生命值，属于整张面板的全局信息
@@ -981,15 +990,5 @@ public sealed partial class BattleMenu
                 overlayBounds.Y + 24),
             Color.DarkRed);
 
-        string closeHint = ModLocalization.GetBattleCloseHint();
-        Vector2 closeHintSize = MeasureText(BattleTextStyles.BattleResultHint, closeHint);
-        DrawText(
-            spriteBatch,
-            BattleTextStyles.BattleResultHint,
-            closeHint,
-            new Vector2(
-                overlayBounds.Center.X - closeHintSize.X / 2f,
-                overlayBounds.Bottom - 38),
-            Game1.textColor);
     }
 }

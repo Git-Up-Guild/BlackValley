@@ -31,7 +31,7 @@ internal static class ModLocalization
 
     public static string GetBattleTitle()
     {
-        return Select("Black Valley Battle Prototype", "黑谷战斗原型");
+        return Select("Black Valley: Draw A Card", "黑露谷：抽卡");
     }
 
     public static string GetEndTurnLabel()

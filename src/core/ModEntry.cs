@@ -5,17 +5,19 @@ using BlackValley.Cards;
 using BlackValley.Monsters;
 using BlackValley.Plants;
 using BlackValley.UI.Battle;
+using BlackValley.World;
 
 namespace BlackValley;
 
 /// <summary>
 /// 模组主入口
-/// 负责初始化配置、加载静态数据，并在按下热键时打开战斗菜单
+/// 负责初始化配置、加载静态数据，并管理世界遭遇与战斗入口
 /// </summary>
 public sealed class ModEntry : Mod
 {
     private ModConfig _config = null!;
     private BattleAssets _battleAssets = null!;
+    private FarmEncounterManager _farmEncounterManager = null!;
 
     public static IMonitor Logger { get; private set; } = null!;
 
@@ -35,6 +37,7 @@ public sealed class ModEntry : Mod
         ModLocalization.SetUseChinese(_config.UseChineseLocalization);
         ModFontManager.Initialize(helper, Monitor);
         _battleAssets = new BattleAssets(helper);
+        _farmEncounterManager = new FarmEncounterManager(helper, Monitor, _battleAssets);
 
         CardDatabase.Clear();
         PlantDatabase.Clear();
@@ -60,11 +63,45 @@ public sealed class ModEntry : Mod
             EnemyDatabase[enemy.Id] = enemy;
         }
 
+        helper.Events.GameLoop.SaveLoaded += OnSaveLoaded;
+        helper.Events.GameLoop.ReturnedToTitle += OnReturnedToTitle;
+        helper.Events.GameLoop.UpdateTicked += OnUpdateTicked;
+        helper.Events.Display.RenderedWorld += OnRenderedWorld;
         helper.Events.Input.ButtonsChanged += OnButtonsChanged;
 
         Monitor.Log(
-            $"BlackValley loaded | Hotkey: {_config.ToggleBattleMenuKey} | Position Debug: {_config.PrintPlayerPositionKey} | Language Toggle: {_config.ToggleLocalizationKey} | Language: {ModLocalization.GetLanguageDisplayName()} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
+            $"BlackValley loaded | Encounter: Ghost Proximity | Position Debug: {_config.PrintPlayerPositionKey} | Language Toggle: {_config.ToggleLocalizationKey} | Language: {ModLocalization.GetLanguageDisplayName()} | Cards: {CardDatabase.Count} | Plants: {PlantDatabase.Count} | Enemies: {EnemyDatabase.Count}",
             LogLevel.Info);
+    }
+
+    // 进入存档后初始化农场里的遭遇点幽灵
+    private void OnSaveLoaded(object? sender, SaveLoadedEventArgs eventArgs)
+    {
+        _farmEncounterManager.InitializeForSave();
+    }
+
+    // 回到标题时清掉运行时遭遇状态，避免串到下一个存档
+    private void OnReturnedToTitle(object? sender, ReturnedToTitleEventArgs eventArgs)
+    {
+        _farmEncounterManager.Clear();
+    }
+
+    // 世界层幽灵只需要待机动画，所以每 tick 更新一次即可
+    private void OnUpdateTicked(object? sender, UpdateTickedEventArgs eventArgs)
+    {
+        _farmEncounterManager.Update();
+
+        bool canTriggerEncounter = Game1.activeClickableMenu == null;
+        if (_farmEncounterManager.ShouldTriggerEncounter(canTriggerEncounter))
+        {
+            OpenBattleMenu("ghost encounter proximity");
+        }
+    }
+
+    // 把遭遇幽灵画在农场世界场景里，后续可以直接接近触发战斗
+    private void OnRenderedWorld(object? sender, RenderedWorldEventArgs eventArgs)
+    {
+        _farmEncounterManager.Draw(eventArgs.SpriteBatch);
     }
 
     // 统一在按键变化时处理开关逻辑
@@ -81,31 +118,6 @@ public sealed class ModEntry : Mod
         {
             HandleLocalizationToggle();
             return;
-        }
-
-        if (!_config.ToggleBattleMenuKey.JustPressed())
-        {
-            return;
-        }
-
-        Monitor.Log($"Battle menu hotkey detected: {_config.ToggleBattleMenuKey}", LogLevel.Info);
-        Helper.Input.SuppressActiveKeybinds(_config.ToggleBattleMenuKey);
-
-        if (Game1.activeClickableMenu is BattleMenu)
-        {
-            Monitor.Log("Closing active battle menu", LogLevel.Info);
-            Game1.exitActiveMenu();
-            return;
-        }
-
-        try
-        {
-            Monitor.Log("Opening battle menu", LogLevel.Info);
-            Game1.activeClickableMenu = new BattleMenu(_battleAssets);
-        }
-        catch (Exception exception)
-        {
-            Monitor.Log($"Failed to open battle menu: {exception}", LogLevel.Error);
         }
     }
 
@@ -143,5 +155,39 @@ public sealed class ModEntry : Mod
 
         Monitor.Log(message, LogLevel.Info);
         Game1.addHUDMessage(new HUDMessage($"Tile ({tileX:0.##}, {tileY:0.##})", HUDMessage.newQuest_type));
+    }
+
+    private void OpenBattleMenu(string triggerSource)
+    {
+        if (Game1.activeClickableMenu is BattleMenu)
+        {
+            return;
+        }
+
+        try
+        {
+            Monitor.Log($"Opening battle menu via {triggerSource}", LogLevel.Info);
+            Game1.activeClickableMenu = new BattleMenu(_battleAssets, HandleBattleResolved);
+        }
+        catch (Exception exception)
+        {
+            Monitor.Log($"Failed to open battle menu via {triggerSource}: {exception}", LogLevel.Error);
+        }
+    }
+
+    private void HandleBattleResolved(bool playerWon)
+    {
+        if (playerWon)
+        {
+            _farmEncounterManager.ResolveActiveEncounterVictory();
+            return;
+        }
+
+        _farmEncounterManager.ResolveActiveEncounterDefeat();
+
+        if (Context.IsWorldReady && Game1.player != null)
+        {
+            Game1.player.health = 0;
+        }
     }
 }

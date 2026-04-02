@@ -29,6 +29,12 @@ internal sealed class BattleController
 
     public EnemyBattleData EnemyData => _enemyData;
 
+    public bool DidPlayerWin =>
+        State.IsBattleOver && string.Equals(State.BattleResultText, BattleVictoryText, StringComparison.Ordinal);
+
+    public bool DidPlayerLose =>
+        State.IsBattleOver && string.Equals(State.BattleResultText, BattleDefeatText, StringComparison.Ordinal);
+
     public BattleController(
         IReadOnlyDictionary<string, CardData> cardDatabase,
         IReadOnlyDictionary<string, PlantData> plantDatabase,

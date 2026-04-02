@@ -17,6 +17,7 @@ public sealed partial class BattleMenu : IClickableMenu
 {
     private const int DefaultEnemyHealth = 12;
     private const string DefaultEnemyId = "Ghost";
+    private const float BattleResultAutoCloseDelaySeconds = 2f;
 
     private const string EnemyTargetType = "Enemy";
     private const string GridTargetPrefix = "Grid";
@@ -26,14 +27,18 @@ public sealed partial class BattleMenu : IClickableMenu
     private readonly BattleAssets _battleAssets;
     private readonly BattleMenuLayout _layout;
     private readonly BattleController _battleController;
+    private readonly Action<bool>? _onBattleResolved;
 
     private CardInstance? _draggedCard;
+    private bool _hasAppliedBattleResultEffects;
+    private float _battleResultElapsedSeconds;
 
     /// <summary>
     /// 创建战斗菜单，并初始化布局和战斗控制器
     /// </summary>
     /// <param name="battleAssets">战斗界面依赖的贴图资源</param>
-    public BattleMenu(BattleAssets battleAssets)
+    /// <param name="onBattleResolved">战斗结果确定后调用的回调，参数表示玩家是否获胜</param>
+    public BattleMenu(BattleAssets battleAssets, Action<bool>? onBattleResolved = null)
         : base(
             (Game1.uiViewport.Width - BattleMenuLayout.PanelWidth) / 2,
             (Game1.uiViewport.Height - BattleMenuLayout.PanelHeight) / 2,
@@ -44,6 +49,7 @@ public sealed partial class BattleMenu : IClickableMenu
         _battleAssets = battleAssets;
         _layout = new BattleMenuLayout(new Rectangle(xPositionOnScreen, yPositionOnScreen, width, height));
         _battleController = new BattleController(ModEntry.CardDatabase, ModEntry.PlantDatabase, ResolveEnemyData());
+        _onBattleResolved = onBattleResolved;
     }
 
     // 当前原型只有史莱姆一个敌人
